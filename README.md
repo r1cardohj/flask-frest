@@ -1,4 +1,4 @@
-# frest
+# flask-frest
 
 make your flask app become restful and modern
 
