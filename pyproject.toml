@@ -1,0 +1,10 @@
+[project]
+name = "frest"
+version = "0.1.0"
+description = "make your flask app become restful."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.0.3",
+    "pydantic>=2.9.2",
+]
