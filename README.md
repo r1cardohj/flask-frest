@@ -2,6 +2,12 @@
 
 make your flask app become restful and modern
 
+```bash
+pip install flask-frest
+```
+
+**quickstart**
+
 ```python
 from flask import Flask
 from pydantic import BaseModel
