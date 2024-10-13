@@ -30,5 +30,5 @@ def create_user(user: User):
 **todo list**
 
 - [x] auto serialize input/output json
-- [] auto generate openapi doc
-- [] ...
+- [ ] auto generate openapi doc
+- [ ] ...

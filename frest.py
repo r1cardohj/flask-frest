@@ -1,5 +1,6 @@
 import typing as t
 from pydantic import ValidationError, BaseModel
+from functools import wraps
 from flask import request 
 
 
@@ -14,13 +15,22 @@ def restful(func: t.Callable):
         def list_user_group(user: User):
             return user
     """
-    _, _type = list(func.__annotations__.items())[0]
+    _type = None
+    if func.__annotations__:
+        _, _type = list(func.__annotations__.items())[0]
+        if not issubclass(_type, BaseModel):
+            _type = None
+
+    @wraps(func)
     def wrapped(*args, **kwargs):
-        try:
-            model = _type(**request.json)
-        except ValidationError as e:
-            return e.errors(), 400
-        resp_obj = func(model, *args, **kwargs)
+        if _type:
+            try:
+                model = _type(**request.json)
+            except ValidationError as e:
+                return e.errors(), 400
+            resp_obj = func(model, *args, **kwargs)
+        else:
+            resp_obj = func(*args, **kwargs)
 
         if issubclass(type(resp_obj), BaseModel):
             resp_obj = resp_obj.model_dump()
