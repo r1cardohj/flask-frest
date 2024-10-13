@@ -46,7 +46,6 @@ def restful(func: t.Callable):
                     if issubclass(type(item), BaseModel):
                         new_first[idx] =new_first[idx].model_dump()
                 resp_obj = new_first, *resp_obj[1:]
-                print(resp_obj)
         # if function return a list, will serialize all BaseModel obj
         elif isinstance(resp_obj, list):
             new_resp_obj = list(resp_obj) 
