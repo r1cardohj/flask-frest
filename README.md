@@ -1,6 +1,6 @@
 # flask-frest
 
-make your flask app become restful and modern
+make your flask app become fluent and restful
 
 ```bash
 pip install flask-frest
