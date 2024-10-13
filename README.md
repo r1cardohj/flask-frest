@@ -9,22 +9,23 @@ from frest import restful
 
 app = Flask(__name__)
 
-class User(BaseModel):
+class Person(BaseModel):
     name: str
     age: int
 
 
-class Account(BaseModel):
-    username: str
-    password: str
-
-
-@app.post('/')
+@app.get("/person")
 @restful
-def create_user(user: User):
-    account = Account(username=user.name,
-                      password=str(user.age) + "secret key")
-    return account
+def list_person():
+    person = Person(name='jun', age=24)
+    return person
+
+
+@app.post("/person")
+@restful
+def create_person(person: Person):
+    # creating...
+    return person
 ```
 
 **todo list**
