@@ -55,4 +55,3 @@ def restful(func: t.Callable):
             resp_obj = new_resp_obj
         return resp_obj
     return wrapped
-
