@@ -1,8 +1,25 @@
-import typing as t
-from pydantic import ValidationError, BaseModel
-from functools import wraps
-from flask import request 
+"""
+Author: r1cardohj
+Email: houjun447@gmail.com
 
+frest is more like a Unix-style Flask plugin support hot swap at any time
+basically it just do two thing:
+    1. Automatically serialize and deserialize json
+    2. provide some helpful until to make your restful app
+
+let us make flask be better if you don't like fastapi...(●'◡'●)
+"""
+
+from functools import wraps
+import typing as t
+import re
+
+from pydantic import ValidationError, BaseModel
+from flask import Flask, request
+
+
+# use `restful` to collect the type annotations in view-func firstly
+_meta_endpoint_func_types: t.List = []
 
 def restful(func: t.Callable):
     """ auto valiate and serialize 
@@ -12,12 +29,13 @@ def restful(func: t.Callable):
 
         @app.get('/user')
         @restful
-        def list_user_group(user: User):
+        def list_user(user: User):
             return user
     """
     _type = None
-    if func.__annotations__:
-        _, _type = list(func.__annotations__.items())[0]
+    if func_types:=func.__annotations__:
+        types = list(func_types.items())
+        _, _type = types[0]
         if not issubclass(_type, BaseModel):
             _type = None
 
@@ -46,7 +64,7 @@ def restful(func: t.Callable):
                     if issubclass(type(item), BaseModel):
                         new_first[idx] =new_first[idx].model_dump()
                 resp_obj = new_first, *resp_obj[1:]
-        # if function return a list, will serialize all BaseModel obj
+        # if function return a list, it will serialize all BaseModel obj in list
         elif isinstance(resp_obj, list):
             new_resp_obj = list(resp_obj) 
             for idx, item in enumerate(resp_obj):
@@ -55,3 +73,15 @@ def restful(func: t.Callable):
             resp_obj = new_resp_obj
         return resp_obj
     return wrapped
+
+
+def include(model: BaseModel, include_fields: t.Iterable[str]) -> dict:
+    """a shortcut for model_dump(include...)
+    """
+    return model.model_dump(include=include_fields)
+
+
+def exclude(model: BaseModel, exclude_fields: t.Iterable[str]) -> dict:
+    """a shortcut for model_dump(exclude=?)
+    """
+    return model.model_dump(exclude=exclude_fields)

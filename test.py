@@ -1,6 +1,7 @@
 import unittest
 from flask import Flask
 from frest import restful
+from frest.core import include, exclude
 from pydantic import BaseModel
 
 class TestCore(unittest.TestCase):
@@ -35,6 +36,40 @@ class TestCore(unittest.TestCase):
         ))
         self.assertEqual(resp.get_json(),
                          dict(name='test', age=12))
+    
+    def test_include(self):
+        class Person(BaseModel):
+            name: str
+            age: int
+            height: float
+        
+        @self.app.get('/person')
+        @restful
+        def list_person():
+            person = Person(name='xx', age=12, height=50.1)
+            return include(person, ['name', 'height'])
+        
+        resp = self.client.get('/person')
+
+        self.assertEqual(resp.get_json(),
+                         dict(name='xx', height=50.1))
+
+    def test_exclude(self):
+        class Dog(BaseModel):
+            name: str
+            age: int
+            weight: float
+
+        @self.app.get('/dog')
+        @restful
+        def list_dog():
+            dog = Dog(name='puppy', age=12, weight=12.44)
+            return exclude(dog, ['age'])
+        
+        resp = self.client.get('/dog')
+
+        self.assertEqual(resp.get_json(), dict(name='puppy', weight=12.44))
+        
 
 
 if __name__ == '__main__': 
