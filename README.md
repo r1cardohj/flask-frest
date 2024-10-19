@@ -37,5 +37,4 @@ def create_person(person: Person):
 **todo list**
 
 - [x] auto serialize input/output json
-- [ ] auto generate openapi doc
 - [ ] ...
