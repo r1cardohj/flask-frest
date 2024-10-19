@@ -12,14 +12,10 @@ let us make flask be better if you don't like fastapi...(●'◡'●)
 
 from functools import wraps
 import typing as t
-import re
 
 from pydantic import ValidationError, BaseModel
-from flask import Flask, request
+from flask import request
 
-
-# use `restful` to collect the type annotations in view-func firstly
-_meta_endpoint_func_types: t.List = []
 
 def restful(func: t.Callable):
     """ auto valiate and serialize 
