@@ -12,6 +12,7 @@ let us make flask be better if you don't like fastapi...(●'◡'●)
 
 from functools import wraps
 import typing as t
+import re
 
 from pydantic import ValidationError, BaseModel
 from flask import Flask, request
@@ -32,8 +33,8 @@ def restful(func: t.Callable):
             return user
     """
     _type = None
-    if func.__annotations__:
-        types = list(func.__annotations__.items())
+    if func_types:=func.__annotations__:
+        types = list(func_types.items())
         _, _type = types[0]
         if not issubclass(_type, BaseModel):
             _type = None
@@ -78,7 +79,7 @@ class Swagger:
     """ auto generate swagger document,
     use it like normal flask ext.
 
-    example:
+    ex::
         app = Flask(__name__)
         swagger = Swagger(app)
     """
@@ -93,6 +94,7 @@ class Swagger:
             self.init_app(app)
 
         # openapi metadata
+        self.openapi_json = {}
         self.info = {}
         self.info['title'] = title
         self.info['description'] = description
@@ -100,7 +102,10 @@ class Swagger:
         self.servers = {}
         # route map
         self.paths = {}
-        self.path_spec_data = []
+        self.openapi_json['info'] = self.info
+        self.openapi_json['openapi'] = '3.0.0'
+        self.openapi_json['servers'] = self.servers
+        self.openapi_json['paths'] = self.paths
 
     def init_app(self, app: Flask):
         self.app = app
@@ -114,37 +119,52 @@ class Swagger:
                 methods = kwargs['methods']
                 endpoint = args[1]
                 view_func = args[2]
-                print(url, methods, endpoint, view_func)
-                self.path_spec_data.append((url, methods, endpoint, view_func))
+                print(f'openapi register (url: {url}, methods: {methods}, endpoint: {endpoint}, view_func: {view_func})')
+
+                self._push_path(url, methods, endpoint, view_func)
+
                 return func(*args, **kwargs)
             return wrapped
 
         self.app.add_url_rule = _spec_collect_decorator(self.app.add_url_rule)
+    
+    def _push_path(self,
+                   url: str,
+                   methods: t.Iterable[str],
+                   endpoint: str | None,
+                   view_func: t.Callable):
+        for http_method in methods:
+            url = self._replace_path_param(url)
+            path = self.paths.setdefault(url, {})
+            method = path.setdefault(http_method, {})
+            method['summary'] = view_func.__doc__
+            method['description'] = ""
+            method['operationId'] = view_func.__name__
+            types = view_func.__annotations__
+
+
+    def _replace_path_param(self, url) -> str:
+        """ switch flask url rule to openapi path rule
+        """
+        flask_pattern = re.compile(r'<([a-zA-Z0-9:]+)>')
+
+        def openapi_replacer(match):
+            param = match.groups()[0]
+            new_param = param.split(':')[-1]
+            return "{" + new_param + "}"
+
+        res = re.sub(flask_pattern, openapi_replacer, url)
+        return res
+
 
 
 def include(model: BaseModel, include_fields: t.Iterable[str]) -> dict:
     """a shortcut for model_dump(include...)
-
-    ex::
-        @app.post("/")
-        @restful
-        def list_person(person: Person):
-            person = Person(name='xx', age=12)
-            # age is a secret...
-            return include(person, ["name"])
     """
     return model.model_dump(include=include_fields)
 
 
 def exclude(model: BaseModel, exclude_fields: t.Iterable[str]) -> dict:
     """a shortcut for model_dump(exclude=?)
-    
-    ex::
-        @app.post("/")
-        @restful
-        def list_person(person: Person)
-            person = Person(name="xx", age=12)
-            # age is a secret
-            return exclude(person, ["age"])
     """
     return model.model_dump(exclude=exclude_fields)
