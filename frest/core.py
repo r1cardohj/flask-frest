@@ -14,7 +14,7 @@ from functools import wraps
 import typing as t
 
 from pydantic import ValidationError, BaseModel
-from flask import request
+from flask import request, Flask
 
 
 def restful(func: t.Callable):
@@ -28,18 +28,19 @@ def restful(func: t.Callable):
         def list_user(user: User):
             return user
     """
-    _type = None
+    body_type = None
     if func_types:=func.__annotations__:
         types = list(func_types.items())
-        _, _type = types[0]
-        if not issubclass(_type, BaseModel):
-            _type = None
+        args_name, body_type= types[0]
 
+        if not issubclass(body_type, BaseModel) or args_name == "return":
+            body_type = None
+        
     @wraps(func)
     def wrapped(*args, **kwargs):
-        if _type:
+        if body_type:
             try:
-                model = _type(**request.json)
+                model = body_type(**request.json)
             except ValidationError as e:
                 return e.errors(), 400
             resp_obj = func(model, *args, **kwargs)
@@ -48,10 +49,12 @@ def restful(func: t.Callable):
 
         if issubclass(type(resp_obj), BaseModel):
             resp_obj = resp_obj.model_dump()
+
         # sometime in flask view function will return
         # iter item like tuple (obj, code)
         elif isinstance(resp_obj, tuple):
             first = resp_obj[0]
+
             if issubclass(type(first), BaseModel):
                 resp_obj = first.model_dump(), *resp_obj[1:]
             elif isinstance(first, list):
@@ -81,3 +84,4 @@ def exclude(model: BaseModel, exclude_fields: t.Iterable[str]) -> dict:
     """a shortcut for model_dump(exclude=?)
     """
     return model.model_dump(exclude=exclude_fields)
+
