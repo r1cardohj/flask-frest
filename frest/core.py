@@ -120,3 +120,31 @@ class Swagger:
             return wrapped
 
         self.app.add_url_rule = _spec_collect_decorator(self.app.add_url_rule)
+
+
+def include(model: BaseModel, include_fields: t.Iterable[str]) -> dict:
+    """a shortcut for model_dump(include...)
+
+    ex::
+        @app.post("/")
+        @restful
+        def list_person(person: Person):
+            person = Person(name='xx', age=12)
+            # age is a secret...
+            return include(person, ["name"])
+    """
+    return model.model_dump(include=include_fields)
+
+
+def exclude(model: BaseModel, exclude_fields: t.Iterable[str]) -> dict:
+    """a shortcut for model_dump(exclude=?)
+    
+    ex::
+        @app.post("/")
+        @restful
+        def list_person(person: Person)
+            person = Person(name="xx", age=12)
+            # age is a secret
+            return exclude(person, ["age"])
+    """
+    return model.model_dump(exclude=exclude_fields)
