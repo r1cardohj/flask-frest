@@ -13,6 +13,9 @@ class TestCore(unittest.TestCase):
         self.runner = app.test_cli_runner()
         self.app = app
         self.app.json.sort_keys = False
+    
+    def tearDown(self):
+        pass
 
     def test_app_exist(self):
         self.assertIsNotNone(self.app)
@@ -36,6 +39,87 @@ class TestCore(unittest.TestCase):
         ))
         self.assertEqual(resp.get_json(),
                          dict(name='test', age=12))
+    
+    def test_restful_return_base_model_obj(self):
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        @self.app.get('/person')
+        @restful
+        def get_person():
+            return Person(name='xx', age=12)
+        
+        resp = self.client.get('/person')
+        self.assertEqual(resp.get_json(), dict(name='xx', age=12))
+    
+    def test_restful_args_1_is_not_base_model_obj(self):
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        @self.app.post('/person/<int:age>')
+        @restful
+        def delete_person(age: int):
+            return Person(name='xx', age=age)
+        
+        resp = self.client.post('/person/1')
+        self.assertEqual(resp.get_json(), dict(name='xx', age=1))
+
+
+
+    def test_restful_return_dict(self):
+
+        class Cat(BaseModel):
+            name: str
+            age: int
+        
+        @self.app.get('/cat')
+        @restful
+        def get_cat():
+            return {'name': 'kitty', 'age': 12}
+        
+        resp = self.client.get('/cat')
+
+        self.assertEqual(resp.get_json(),
+                         dict(name='kitty', age=12))
+    
+    def test_restful_return_mul_dict_and_code(self):
+        class Cat(BaseModel):
+            name: str
+            age: int
+        
+        @self.app.post('/cat')
+        @restful
+        def create_cat():
+            return {'name': 'kitty', 'age': 12}, 201
+        
+        resp = self.client.post('/cat')
+
+        self.assertEqual(resp.get_json(), dict(name='kitty', age=12))
+        self.assertEqual(resp.status_code, 201)
+    
+    def test_restful_return_a_list(self):
+        class Cat(BaseModel):
+            name: str
+            age: int
+        
+        @self.app.post('/cat')
+        @restful
+        def create_cat():
+            tom = Cat(name='Tom', age=12)
+            jerry = Cat(name='Jerry', age=2)
+
+            return [tom, jerry]
+        
+        resp = self.client.post('/cat', json=[
+        ])
+
+        self.assertEqual(resp.get_json(), [ 
+            {'name': 'Tom', 'age': 12},
+            {'name': 'Jerry', 'age': 2}
+        ])
+
     
     def test_include(self):
         class Person(BaseModel):
@@ -69,7 +153,7 @@ class TestCore(unittest.TestCase):
         resp = self.client.get('/dog')
 
         self.assertEqual(resp.get_json(), dict(name='puppy', weight=12.44))
-        
+    
 
 
 if __name__ == '__main__': 
