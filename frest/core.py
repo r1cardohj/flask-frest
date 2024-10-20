@@ -85,3 +85,30 @@ def exclude(model: BaseModel, exclude_fields: t.Iterable[str]) -> dict:
     """
     return model.model_dump(exclude=exclude_fields)
 
+
+def to_schema(obj: t.Any) -> BaseModel:
+    """"""
+    schema = getattr(obj, '__frest_schema__')
+
+    if not schema:
+        raise RuntimeError(f'{obj} must set attr `__frest_schema__` first, to_schema function will active')
+
+    if not issubclass(schema, BaseModel):
+        raise RuntimeError(f'schema :{schema} is not `pydantic.BaseModel` sub class')
+    
+    return schema.model_validate(obj)
+        
+
+T = t.TypeVar('T')
+
+
+def from_schema(model: BaseModel, target_cls: t.Type[T]) -> T:
+    schema = getattr(target_cls, '__frest_schema__')
+
+    if not schema:
+        raise RuntimeError(f'{target_cls} must set attr `__frest_schema__` first, schema function')
+
+    if not issubclass(schema, BaseModel):
+        raise RuntimeError(f'schema :{schema} is not `pydantic.BaseModel` sub class')
+    
+    return target_cls(**dict(model))
